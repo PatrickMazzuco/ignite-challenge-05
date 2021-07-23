@@ -1,6 +1,10 @@
 import { GetStaticProps } from 'next';
 import Head from 'next/head';
+import Link from 'next/link';
 import { FiCalendar, FiUser } from 'react-icons/fi';
+import Prismic from '@prismicio/client';
+import { format } from 'date-fns';
+import ptBR from 'date-fns/locale/pt-BR';
 
 import { getPrismicClient } from '../services/prismic';
 
@@ -26,7 +30,7 @@ interface HomeProps {
   postsPagination: PostPagination;
 }
 
-export default function Home(): JSX.Element {
+export default function Home({ postsPagination }: HomeProps): JSX.Element {
   return (
     <>
       <Head>
@@ -35,78 +39,59 @@ export default function Home(): JSX.Element {
       <main className={`${commonStyles.container}`}>
         <img className={styles.logo} src="/images/logo.svg" alt="logo" />
         <div className={`${commonStyles.content} ${styles.posts}`}>
-          <a href="#">
-            <strong>Como utilizar hooks</strong>
-            <p>Pensando em sincronização em vez de ciclos de vida.</p>
-            <div>
-              <time>
-                <FiCalendar /> 15 Mar 2021
-              </time>
-              <span>
-                <FiUser /> Joseph Oliveira
-              </span>
-            </div>
-          </a>
-          <a href="#">
-            <strong>Criando um app CRA do zero</strong>
-            <p>
-              Tudo sobre como criar a sua primeira aplicação utilizando Create
-              React App.
-            </p>
-            <div>
-              <time>
-                <FiCalendar /> 15 Mar 2021
-              </time>
-              <span>
-                <FiUser /> Joseph Oliveira
-              </span>
-            </div>
-          </a>
-          <a href="#">
-            <strong>Como utilizar hooks</strong>
-            <p>Pensando em sincronização em vez de ciclos de vida.</p>
-            <div>
-              <time>
-                <FiCalendar /> 15 Mar 2021
-              </time>
-              <span>
-                <FiUser /> Joseph Oliveira
-              </span>
-            </div>
-          </a>
-          <a href="#">
-            <strong>Como utilizar hooks</strong>
-            <p>Pensando em sincronização em vez de ciclos de vida.</p>
-            <div>
-              <time>
-                <FiCalendar /> 15 Mar 2021
-              </time>
-              <span>
-                <FiUser /> Joseph Oliveira
-              </span>
-            </div>
-          </a>
-          <a href="#">
-            <strong>Como utilizar hooks</strong>
-            <p>Pensando em sincronização em vez de ciclos de vida.</p>
-            <div>
-              <time>
-                <FiCalendar /> 15 Mar 2021
-              </time>
-              <span>
-                <FiUser /> Joseph Oliveira
-              </span>
-            </div>
-          </a>
+          {postsPagination.results.map(post => (
+            <Link key={post.uid} href={`/post/${post.uid}`}>
+              <a>
+                <strong>{post.data.title}</strong>
+                <p>{post.data.subtitle}</p>
+                <div>
+                  <time>
+                    <FiCalendar /> {post.first_publication_date}
+                  </time>
+                  <span>
+                    <FiUser /> {post.data.author}
+                  </span>
+                </div>
+              </a>
+            </Link>
+          ))}
         </div>
       </main>
     </>
   );
 }
 
-// export const getStaticProps = async () => {
-//   // const prismic = getPrismicClient();
-//   // const postsResponse = await prismic.query(TODO);
+export const getStaticProps: GetStaticProps = async () => {
+  const prismic = getPrismicClient();
+  const postsResponse = await prismic.query(
+    [Prismic.Predicates.at('document.type', 'posts')],
+    {
+      fetch: ['posts.title', 'posts.subtitle', 'posts.author'],
+      pageSize: 5,
+    }
+  );
 
-//   // TODO
-// };
+  const parsedPosts = postsResponse.results.map(post => {
+    const formattedDate = format(
+      new Date(post.first_publication_date),
+      'd MMM yyyy',
+      {
+        locale: ptBR,
+      }
+    );
+
+    return {
+      ...post,
+      first_publication_date: formattedDate,
+    };
+  });
+
+  return {
+    props: {
+      postsPagination: {
+        ...postsResponse,
+        results: parsedPosts,
+      },
+    },
+  };
+};
