@@ -3,14 +3,13 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { FiCalendar, FiUser } from 'react-icons/fi';
 import Prismic from '@prismicio/client';
-import { format } from 'date-fns';
-import ptBR from 'date-fns/locale/pt-BR';
 
 import { getPrismicClient } from '../services/prismic';
+import { formatDate } from '../utils/formatDate';
+import Header from '../components/Header';
 
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
-import Header from '../components/Header';
 
 interface Post {
   uid?: string;
@@ -47,7 +46,7 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
                 <p>{post.data.subtitle}</p>
                 <div>
                   <time>
-                    <FiCalendar /> {post.first_publication_date}
+                    <FiCalendar /> {formatDate(post.first_publication_date)}
                   </time>
                   <span>
                     <FiUser /> {post.data.author}
@@ -72,26 +71,10 @@ export const getStaticProps: GetStaticProps = async () => {
     }
   );
 
-  const parsedPosts = postsResponse.results.map(post => {
-    const formattedDate = format(
-      new Date(post.first_publication_date),
-      'd MMM yyyy',
-      {
-        locale: ptBR,
-      }
-    );
-
-    return {
-      ...post,
-      first_publication_date: formattedDate,
-    };
-  });
-
   return {
     props: {
       postsPagination: {
         ...postsResponse,
-        results: parsedPosts,
       },
     },
   };

@@ -1,11 +1,10 @@
 /* eslint react/no-danger: 0 */
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { format } from 'date-fns';
-import ptBR from 'date-fns/locale/pt-BR';
 import Head from 'next/head';
 import { FiCalendar, FiUser, FiClock } from 'react-icons/fi';
 
 import { RichText } from 'prismic-dom';
+import { formatDate } from '../../utils/formatDate';
 import { getPrismicClient } from '../../services/prismic';
 import Header from '../../components/Header';
 
@@ -24,7 +23,7 @@ interface Post {
       heading: string;
       body: {
         text: string;
-      };
+      }[];
     }[];
   };
 }
@@ -50,7 +49,7 @@ export default function Post({ post }: PostProps): JSX.Element {
           <h1>{post.data.title}</h1>
           <div>
             <time>
-              <FiCalendar /> {post.first_publication_date}
+              <FiCalendar /> {formatDate(post.first_publication_date)}
             </time>
             <span>
               <FiUser /> {post.data.author}
@@ -63,7 +62,9 @@ export default function Post({ post }: PostProps): JSX.Element {
             {post.data.content.map(content => (
               <section key={content.heading}>
                 <h2>{content.heading}</h2>
-                <div dangerouslySetInnerHTML={{ __html: content.body.text }} />
+                {content.body.map(body => (
+                  <p key={body.text}>{body.text}</p>
+                ))}
               </section>
             ))}
           </div>
@@ -85,28 +86,8 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const prismic = getPrismicClient();
   const response = await prismic.getByUID('posts', String(slug), {});
 
-  const formattedDate = format(
-    new Date(response.first_publication_date),
-    'd MMM yyyy',
-    {
-      locale: ptBR,
-    }
-  );
-
-  const parsedContent = response.data.content.map(content => ({
-    heading: content.heading,
-    body: {
-      text: RichText.asHtml(content.body),
-    },
-  }));
-
-  const parsedPost = {
+  const parsedPost: Post = {
     ...response,
-    first_publication_date: formattedDate,
-    data: {
-      ...response.data,
-      content: parsedContent,
-    },
   };
 
   return {
