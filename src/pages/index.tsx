@@ -10,6 +10,7 @@ import { getPrismicClient } from '../services/prismic';
 
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
+import Header from '../components/Header';
 
 interface Post {
   uid?: string;
@@ -37,7 +38,7 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
         <title>Home | spacetraveling</title>
       </Head>
       <main className={`${commonStyles.container}`}>
-        <img className={styles.logo} src="/images/logo.svg" alt="logo" />
+        <Header className={styles.logo} />
         <div className={`${commonStyles.content} ${styles.posts}`}>
           {postsPagination.results.map(post => (
             <Link key={post.uid} href={`/post/${post.uid}`}>
