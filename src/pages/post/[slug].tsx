@@ -2,8 +2,9 @@
 import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
 import { FiCalendar, FiUser, FiClock } from 'react-icons/fi';
+import { useRouter } from 'next/router';
+import Prismic from '@prismicio/client';
 
-import { RichText } from 'prismic-dom';
 import { formatDate } from '../../utils/formatDate';
 import { getPrismicClient } from '../../services/prismic';
 import Header from '../../components/Header';
@@ -33,6 +34,12 @@ interface PostProps {
 }
 
 export default function Post({ post }: PostProps): JSX.Element {
+  const router = useRouter();
+
+  if (router.isFallback) {
+    return <div>Carregando...</div>;
+  }
+
   return (
     <>
       <Head>
@@ -75,9 +82,24 @@ export default function Post({ post }: PostProps): JSX.Element {
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
+  const prismic = getPrismicClient();
+  const postsResponse = await prismic.query(
+    [Prismic.Predicates.at('document.type', 'posts')],
+    {
+      fetch: ['posts.title', 'posts.subtitle', 'posts.author'],
+      pageSize: 2,
+    }
+  );
+
+  const paths = postsResponse.results.map(post => ({
+    params: {
+      slug: post.uid,
+    },
+  }));
+
   return {
-    paths: [],
-    fallback: 'blocking',
+    paths,
+    fallback: true,
   };
 };
 
