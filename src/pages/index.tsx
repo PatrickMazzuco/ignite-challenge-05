@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { GetStaticProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -31,6 +32,18 @@ interface HomeProps {
 }
 
 export default function Home({ postsPagination }: HomeProps): JSX.Element {
+  const [posts, setPosts] = useState<Post[]>(postsPagination.results);
+  const [nextPage, setNextPage] = useState(postsPagination.next_page);
+
+  async function loadMorePosts(): Promise<void> {
+    if (nextPage) {
+      const postsResponse = await fetch(nextPage);
+      const data: PostPagination = await postsResponse.json();
+      setPosts([...posts, ...data.results]);
+      setNextPage(data.next_page);
+    }
+  }
+
   return (
     <>
       <Head>
@@ -39,7 +52,7 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
       <main className={`${commonStyles.container}`}>
         <Header className={styles.logo} />
         <div className={`${commonStyles.content} ${styles.posts}`}>
-          {postsPagination.results.map(post => (
+          {posts.map(post => (
             <Link key={post.uid} href={`/post/${post.uid}`}>
               <a>
                 <strong>{post.data.title}</strong>
@@ -55,6 +68,11 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
               </a>
             </Link>
           ))}
+          {!!nextPage && (
+            <button type="button" onClick={loadMorePosts}>
+              Carregar mais posts
+            </button>
+          )}
         </div>
       </main>
     </>
